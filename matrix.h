@@ -73,7 +73,7 @@ public:
 	inline double operator[](int linearizedIndex) const {
 		return data[linearizedIndex];
 	}
-		
+	
 	inline void addRow(int i_1, int i_2, double coef) noexcept {
 		for (int j = 0; j < m; ++j) {
 			data[i_1 * m + j] += data[i_2 * m + j] * coef;
@@ -99,6 +99,40 @@ public:
 			data[i_1 * m + j] = data[i_2 * m + j];
 			data[i_2 * m + j] = temp;
 		}
+	}
+
+	inline void rotate(int i_1, int i_2, double cos, double sin) {
+		for (int j = 0; j < m; ++j) {
+			double x_i1 = data[i_1 * m + j];
+			double x_i2 = data[i_2 * m + j];
+			data[i_1 * m + j] = x_i1 * cos - x_i2 * sin;
+			data[i_2 * m + j] = x_i1 * sin + x_i2 * cos;
+		}
+	}
+
+	inline void rotate(int i_1, int i_2, double cos, double sin, int k) {
+		for (int j = k; j < m; ++j) {
+			double x_i1 = data[i_1 * m + j];
+			double x_i2 = data[i_2 * m + j];
+			data[i_1 * m + j] = x_i1 * cos - x_i2 * sin;
+			data[i_2 * m + j] = x_i1 * sin + x_i2 * cos;
+		}
+	}
+
+	int argmaxRow(int k) {
+		double maxValue = data[k * n + k];
+		int argmax = k;
+		for (int i = k + 1; i < n; ++i) {
+			if (abs(data[i * n + k]) > abs(maxValue)) {
+				maxValue = data[i * n + k];
+				argmax = i;
+			}
+		}
+
+		if (utils::isEqual(maxValue, 0))
+			return -1;
+
+		return argmax;
 	}
 
 	void print() const noexcept {
