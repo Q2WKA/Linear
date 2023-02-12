@@ -9,11 +9,11 @@ using namespace utils;
 int main() {
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-	Matrix to_invert = Matrix(2000, 2000, &revAbsDiff);
+	Matrix to_invert = Matrix(100, 100, &revAbsDiff);
 	Matrix copied = to_invert;
 
 	GaussianInverter gaussianInverter(std::make_shared<Matrix>(to_invert));
-	gaussianInverter.directGauss();
+	gaussianInverter.directAlgorithm();
 	gaussianInverter.reverseGauss();
 	gaussianInverter.checkRes(copied);
 
