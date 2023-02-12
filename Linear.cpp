@@ -1,21 +1,28 @@
+#include <chrono>
 #include <iostream>
+#include "inverter.h"
 #include "matrix.h"
 #include "utils.h"
 
 using namespace utils;
 
 int main() {
-	matrix m(3, 5, &abs_diff);
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-	linear_vector v(5);
+	Matrix to_invert = Matrix(2000, 2000, &revAbsDiff);
+	Matrix copied = to_invert;
 
-	v.fill();
+	GaussianInverter gaussianInverter(std::make_shared<Matrix>(to_invert));
+	gaussianInverter.directGauss();
+	gaussianInverter.reverseGauss();
+	gaussianInverter.checkRes(copied);
 
-	linear_vector v1 = m*v;
+	std::unique_ptr<Matrix> res = gaussianInverter.returnResult();
+	std::cout << std::endl << "Inverted matrix: " << std::endl;
+	res.get()->printTrunkated(10);
 
-	v1.print();
-
-	m.print();
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[micro seconds]" << std::endl;
 
     return 0;
 }
