@@ -46,6 +46,27 @@ public:
 		}
 		invertedMatrix.multiplicateRow(k, m_kk);
 	}
+
+	int chooseMaxRow(int k) {
+		int kNew = invertingMatrix.argmaxRow(k);
+		if (kNew < 0) return -1;
+
+		invertingMatrix.swapRows(k, kNew);
+		invertedMatrix.swapRows(k, kNew);
+
+		return 0;
+	}
+
+	void directAlgorithm() {
+		for (int k = 0; k < n; ++k) {
+			if (stepDirectAlgorithm(k) < 0) {
+				std::cout << "Matrix is irrevertible!";
+				break;
+			}
+		}
+	}
+
+	virtual int stepDirectAlgorithm(int k) = 0;
 };
 
 class GaussianInverter : public virtual Inverter {
@@ -58,40 +79,14 @@ public:
 		invertingMatrix.printTrunkated(10);
 	}
 
-	int getMaxRowElement(int k) {
-		double maxValue = invertingMatrix.data[k * n + k];
-		int argmax = k;
-		for (int i = k + 1; i < n; ++i) {
-			if (abs(invertingMatrix.data[i * n + k]) > abs(maxValue)) {
-				maxValue = invertingMatrix.data[i * n + k];
-				argmax = i;
-			}
-		}
+	int stepDirectAlgorithm(int k) {
+		int errorCode = chooseMaxRow(k);
+		if (errorCode < 0) return errorCode;
 
-		notInvertible = utils::isEqual(maxValue, 0);
-
-		return argmax;
-	}
-
-	void directGauss() {
-		for (int k = 0; k < n; ++k) {
-			if (stepDirectGauss(k)) {
-				std::cout << "Matrix is irrevertible!";
-				break;
-			}
-		}
-	}
-
-	int stepDirectGauss(int k) {
-		int kNew = getMaxRowElement(k);
-		if (notInvertible) return 1;
-
-		invertingMatrix.swapRows(k, kNew);
-		invertedMatrix.swapRows(k, kNew);
-		double m_kk = 1. / invertingMatrix.data[k * n + k];
+		double m_kk = 1. / invertingMatrix[k * n + k];
 
 		for (int i = k + 1; i < n; ++i) {
-			double coef = - (invertingMatrix.data[i * n + k] * m_kk);
+			double coef = - (invertingMatrix[i * n + k] * m_kk);
 			invertingMatrix.addRow(i, k, coef, k);
 			invertedMatrix.addRow(i, k, coef);
 		}
@@ -110,4 +105,22 @@ public:
 		invertingMatrix.printTrunkated(10);
 	}
 
+	int stepDirectAlgorithm(int k) {
+		int kNew = invertingMatrix.argmaxRow(k);
+		if (kNew < 0) return -1;
+
+		invertingMatrix.swapRows(k, kNew);
+		invertedMatrix.swapRows(k, kNew);
+
+		double x = invertingMatrix[k * n + k];
+		for (int i = k; i < n; ++i) {
+			double y = invertingMatrix[i * n + k];
+			double r = std::sqrt(x * x + y * y);
+			double cos = x / r, sin = - y / r;
+			invertingMatrix.rotate(k, i, cos, sin, k);
+			invertedMatrix.rotate(k, i, cos, sin);
+		}
+
+		return 0;
+	}
 };
