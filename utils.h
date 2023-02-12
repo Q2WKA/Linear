@@ -1,20 +1,32 @@
 #pragma once
+#include <memory>
 #include <vector>
 #include <string>
 
-constexpr double EPS = 1e-16;
 
 namespace utils {
+    constexpr double EPS = 1e-16;
+
+    inline double e(int i, int j) {
+        return (i == j);
+    }
+
+    inline double U(int i, int j) {
+        if (i > j) return 0;
+        else if (i == j) return 1;
+        else return 1. / (i + j + 1);
+    }
+
     inline double hilbert(int i, int j) {
         return 1. / (i + j + 1);
     }
 
-    inline double abs_diff(int i, int j) {
+    inline double absDiff(int i, int j) {
         return abs(i - j);
     }
 
-    inline double rev_abs_diff(int i, int j) {
-        return 1. / (abs_diff(i, j) + 1);
+    inline double revAbsDiff(int i, int j) {
+        return 1. / (absDiff(i, j) + 1);
     }
 
     inline bool isPositive(double value) {
@@ -22,7 +34,7 @@ namespace utils {
     }
 
     inline bool isEqual(double lhs, double rhs) {
-        return (abs(lhs - rhs) > EPS);
+        return (abs(lhs - rhs) <= EPS);
     }
 
     std::vector<std::string> split(const std::string& text, char sep) {
