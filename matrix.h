@@ -101,6 +101,15 @@ public:
 		}
 	}
 
+	inline void swapRows(int i_1, int i_2, int k) {
+		double temp;
+		for (int j = k; j < m; ++j) {
+			temp = data[i_1 * m + j];
+			data[i_1 * m + j] = data[i_2 * m + j];
+			data[i_2 * m + j] = temp;
+		}
+	}
+
 	inline void rotate(int i_1, int i_2, double cos, double sin) {
 		for (int j = 0; j < m; ++j) {
 			double x_i1 = data[i_1 * m + j];
@@ -119,7 +128,7 @@ public:
 		}
 	}
 
-	int argmaxRow(int k) {
+	int argmaxRow(int k) const {
 		double maxValue = data[k * n + k];
 		int argmax = k;
 		for (int i = k + 1; i < n; ++i) {
@@ -145,12 +154,34 @@ public:
 		}
 	}
 
+	void print(double zeroPrecision) {
+		for (int i = 0; i < n; ++i) {
+			for (int j = 0; j < m; ++j) {
+				if (utils::isEqual(data[i * m + j] * zeroPrecision, 0.)) std::cout << std::setw(7) << std::setprecision(3) << 0 << "  ";
+				else std::cout << std::setw(7) << std::setprecision(3) << data[i * m + j] << "  ";
+			}
+			std::cout << std::endl;
+		}
+	}
+
 	void printTrunkated(int threshold) const noexcept {
 		int n_ = std::min<int>(threshold, n), m_ = std::min<int>(threshold, m);
 
 		for (int i = 0; i < n_; ++i) {
 			for (int j = 0; j < m_; ++j) {
 				if (utils::isEqual(data[i * m + j], 0.)) std::cout << std::setw(7) << std::setprecision(3) << 0 << "  ";
+				else std::cout << std::setw(7) << std::setprecision(3) << data[i * m + j] << "  ";
+			}
+			std::cout << std::endl;
+		}
+	}
+
+	void printTrunkated(int threshold, double zeroPrecision) const noexcept {
+		int n_ = std::min<int>(threshold, n), m_ = std::min<int>(threshold, m);
+
+		for (int i = 0; i < n_; ++i) {
+			for (int j = 0; j < m_; ++j) {
+				if (utils::isEqual(data[i * m + j] * zeroPrecision, 0.)) std::cout << std::setw(7) << std::setprecision(3) << 0 << "  ";
 				else std::cout << std::setw(7) << std::setprecision(3) << data[i * m + j] << "  ";
 			}
 			std::cout << std::endl;
