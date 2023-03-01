@@ -2,7 +2,6 @@
 #include <iostream>
 #include <cassert>
 #include <iomanip>
-#include <vector>
 #include "matrix.h"
 #include "utils.h"
 
@@ -55,7 +54,7 @@ public:
 	}
 
 	std::unique_ptr<Matrix> returnResult() {
-		return std::move(std::make_unique<Matrix>(invertedMatrix));
+		return std::make_unique<Matrix>(invertedMatrix);
 	}
 		
 	void reverseGauss() {
@@ -66,7 +65,22 @@ public:
 
 	void checkRes(const Matrix& copied) {
 		std::cout << std::endl << "Inverse * Inverting:" << std::endl;
-		(invertedMatrix * copied).printTrunkated(10, 1. / 100);
+		Matrix product = (invertedMatrix * copied);
+		product.printTrunkated(10, 1. / 100);
+
+		double norm = 0;
+		for (int i = 0; i < n; ++i) {
+			double temp = 0;
+			for (int j = 0; j < n; ++j) {
+				int isDiag = (int)(i == j);
+				temp += abs(product[i * n + j] - isDiag);
+			}
+			if (temp > norm) {
+				norm = temp;
+			}
+		}
+
+		std::cout << "Residual of inverse matrix = " << norm << std::endl;;
 	}
 
 	void directAlgorithm() {
@@ -85,8 +99,8 @@ public:
 class GaussianInverter : public virtual Inverter {
 protected:
 	int stepDirectAlgorithm(int k) {
-		int errorCode = chooseMaxRow(k);
-		if (errorCode < 0) return errorCode;
+		int irreversibleError = chooseMaxRow(k);
+		if (irreversibleError < 0) return irreversibleError;
 
 		double m_kk = 1. / invertingMatrix[k * n + k];
 
@@ -101,8 +115,6 @@ protected:
 
 public:
 	GaussianInverter(std::shared_ptr<Matrix> argument) noexcept : Inverter(argument) {
-		assertm((*argument.get()).n == (*argument.get()).m, "Only square matrices are invertible!");
-
 		std::cout << "Gaussian inverter created" << std::endl;
 		std::cout << "Matrix to be inverted" << std::endl;
 		invertingMatrix.printTrunkated(10);
@@ -112,8 +124,8 @@ public:
 class RotationInverter : public virtual Inverter {
 protected:
 	int stepDirectAlgorithm(int k) {
-		int errorCode = chooseNonzeroRow(k);
-		if (errorCode < 0) return errorCode;
+		int irreversibleError = chooseNonzeroRow(k);
+		if (irreversibleError < 0) return irreversibleError;
 
 		for (int i = k + 1; i < n; ++i) {
 			double x = invertingMatrix[k * n + k];
@@ -121,8 +133,8 @@ protected:
 			if (isEqual(y, 0.)) continue;
 			double r = Q_rsqrt(x * x + y * y);
 			double cos = x * r, sin = - y * r;
-			invertingMatrix.rotate(k, i, cos, sin, k);
-			invertedMatrix.rotate(k, i, cos, sin);
+			invertingMatrix.rotateRow(k, i, cos, sin, k);
+			invertedMatrix.rotateRow(k, i, cos, sin);
 		}
 
 		return 0;
@@ -130,11 +142,48 @@ protected:
 
 public:
 	RotationInverter(std::shared_ptr<Matrix> argument) noexcept : Inverter(argument) {
-		assertm((*argument.get()).n == (*argument.get()).m, "Only square matrices are invertible!");
-
 		std::cout << "Rotation inverter created" << std::endl;
 		std::cout << "Matrix to be inverted" << std::endl;
 		invertingMatrix.printTrunkated(10);
 	}
+};
 
+class ReflectionInverter : public virtual Inverter {
+protected:
+	std::shared_ptr<double[]> supportingVector = std::make_shared<double[]>(n);
+
+	inline void refillSupportingVector(int k, double aNorm, double xNorm) noexcept {
+		supportingVector[k] = (invertingMatrix[k * n + k] - aNorm) * xNorm;
+		for (int i = k + 1; i < n; ++i) {
+			supportingVector[i] = invertingMatrix[i * n + k] * xNorm;
+		}
+	}
+
+	int stepDirectAlgorithm(int k) {
+		int irreversibleError = chooseNonzeroRow(k);
+		if (irreversibleError < 0) return irreversibleError;
+
+		double trunkatedNorm = 0;
+		double aNorm, xNorm;
+		double a_kk = invertingMatrix[k * n + k];
+
+		for (int i = k+1; i < n; ++i) {
+			trunkatedNorm += invertingMatrix[i * n + k] * invertingMatrix[i * n + k];
+		}
+
+		aNorm = std::sqrt(trunkatedNorm + a_kk * a_kk);
+		xNorm = 1. / std::sqrt(trunkatedNorm + (a_kk - aNorm) * (a_kk - aNorm));
+
+		refillSupportingVector(k, aNorm, xNorm);
+
+		invertedMatrix.reflectSubmatrix(k, supportingVector);
+		invertingMatrix.reflectSubmatrix(k, supportingVector);
+	}
+
+public:
+	ReflectionInverter(std::shared_ptr<Matrix> argument) noexcept : Inverter(argument) {
+		std::cout << "Reflection inverter created" << std::endl;
+		std::cout << "Matrix to be inverted" << std::endl;
+		invertingMatrix.printTrunkated(10);
+	}
 };

@@ -2,14 +2,15 @@
 #include <iostream>
 #include <iomanip>
 #include <memory>
-#include "inverter.h"
 #include "utils.h"
 
 #define assertm(exp, msg) assert(((void)msg, exp));
 
 class Matrix {
-protected:
+public:
 	const int n, m;
+
+protected:
 	std::unique_ptr<double[]> data = std::make_unique<double[]>(n * m);
 	inline void set(int linearizedIndex, double new_value) {
 		data[linearizedIndex] = new_value;
@@ -17,7 +18,6 @@ protected:
 
 	friend class Inverter;
 	friend class RotationInverter;
-	friend class GaussianInverter;
 
 public:
 	Matrix(int n, int m) : n(n), m(m) {
@@ -44,6 +44,10 @@ public:
 		}
 	}
 
+	Matrix(Matrix&& other) noexcept : n(other.n), m(other.m) {
+		data = std::move(other.data);
+	}
+
 	Matrix operator=(const Matrix& other) {
 		Matrix newMatrix(other.n, other.m);
 		for (int i = 0; i < n; ++i) {
@@ -67,7 +71,7 @@ public:
 				newMatrix.data[i * other.m + j] = m_ij;
 			}
 		}
-		return std::move(newMatrix);
+		return newMatrix;
 	}
 
 	inline double operator[](int linearizedIndex) const {
@@ -110,7 +114,7 @@ public:
 		}
 	}
 
-	inline void rotate(int i_1, int i_2, double cos, double sin) {
+	inline void rotateRow(int i_1, int i_2, double cos, double sin) {
 		for (int j = 0; j < m; ++j) {
 			double x_i1 = data[i_1 * m + j];
 			double x_i2 = data[i_2 * m + j];
@@ -119,12 +123,25 @@ public:
 		}
 	}
 
-	inline void rotate(int i_1, int i_2, double cos, double sin, int k) {
+	inline void rotateRow(int i_1, int i_2, double cos, double sin, int k) {
 		for (int j = k; j < m; ++j) {
 			double x_i1 = data[i_1 * m + j];
 			double x_i2 = data[i_2 * m + j];
 			data[i_1 * m + j] = x_i1 * cos - x_i2 * sin;
 			data[i_2 * m + j] = x_i1 * sin + x_i2 * cos;
+		}
+	}
+
+	void reflectSubmatrix(int k, std::shared_ptr<double[]> x) {
+		for (int j = k; j < m; ++j) {
+			double scalarProduct = 0;
+			for (int i = k; i < n; ++i) {
+				scalarProduct += data[i * m + j] * x[i];
+			}
+			scalarProduct *= 2;
+			for (int i = k; i < n; ++i) {
+				data[i * m + j] -= x[i] * scalarProduct;
+			}
 		}
 	}
 
